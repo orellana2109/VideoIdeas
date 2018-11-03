@@ -3,6 +3,8 @@ const exphbs = require('express-handlebars'); // view engine
 const methodOverride = require('method-override'); // allows the PUT request in a form
 const mongoose = require('mongoose'); // MongoDB queries
 const bodyParser = require('body-parser');
+const flash = require('connect-flash');
+const session = require('express-session');
 
 const app = express();
 
@@ -31,6 +33,22 @@ app.use(bodyParser.json());
 // method override middleware
 app.use(methodOverride('_method'));
 
+// express session middleware
+app.use(session({
+  secret: 'secret',
+  resave: true,
+  saveUninitialized: true,
+  }));
+
+app.use(flash());
+
+// globabl variable
+app.use(function(req, res, next) {
+  res.locals.success_msg = req.flash('success_msg');
+  res.locals.error_msg = req.flash('error_msg');
+  res.locals.error = req.flash('error');
+  next();
+})
 //**************ROUTES************************* */
 
 //Index Route
@@ -72,7 +90,7 @@ app.get('/ideas/add', (req, res) => {
 
 // Edit Ideas
 app.get('/ideas/edit/:id', (req, res) => {
-  Idea.findOneAndUpdate({
+  Idea.findOne({
     _id: req.params.id
   })
     .then(idea => {
@@ -115,7 +133,8 @@ app.post('/ideas', (req, res) => {
     new Idea(newUser)
       .save()
       .then(idea => { // new Idea is from the model pass in the newUser to save
-              res.redirect('/ideas')   // then redirect to the ideas path
+          req.flash('success_msg', 'Video idea added')      
+          res.redirect('/ideas')   // then redirect to the ideas path
           });
         } // end of else
       });
@@ -124,7 +143,7 @@ app.post('/ideas', (req, res) => {
 
 // Edit form process
 app.put('/ideas/:id', (req, res) => {
-  Idea.findOneAndUpdate({
+  Idea.findOne({
     _id: req.params.id
   })
     .then(idea => {
@@ -134,16 +153,18 @@ app.put('/ideas/:id', (req, res) => {
 
       idea.save()
         .then(idea => {
+          req.flash('success_msg', 'Video idea updated')
           res.redirect('/ideas');
         })
     });
   
-});
+}); 
 
 //Delete idea
 app.delete('/ideas/:id', (req, res) => {
   Idea.findByIdAndRemove({_id: req.params.id})
     .then(() => {
+      req.flash('success_msg', 'Video idea removed')
       res.redirect('/ideas');
     })
 })
